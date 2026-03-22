@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Bogong Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1a1208;
+  --ink-mid: #4a3f2a;
+  --ink-dim: #8a7a62;
+  --paper: #faf6ef;
+  --paper-warm: #f5ede0;
+  --paper-deep: #ede3d4;
+  --paper-darker: #e0d4c0;
+  --rule: rgba(26,18,8,0.08);
+  --rule-strong: rgba(26,18,8,0.15);
+  --green: #2d6a4f;
+  --green-light: rgba(45,106,79,0.12);
+  --red: #9b2226;
+  --red-light: rgba(155,34,38,0.1);
+  --gold: #c17f24;
+  --gold-light: rgba(193,127,36,0.12);
+  --gold-border: rgba(193,127,36,0.35);
+  --shadow: 0 2px 12px rgba(26,18,8,0.08);
+  --shadow-lg: 0 8px 32px rgba(26,18,8,0.12);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; background:var(--paper); font-family:'DM Sans',sans-serif; color:var(--ink); }
+
+/* SPLASH */
+#splash { position:fixed; inset:0; background:#1a1208; z-index:999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; transition:opacity 0.6s; }
+#splash img { width:160px; height:160px; object-fit:contain; animation:float 2s ease-in-out infinite alternate; }
+#splash .moth-fallback { font-size:64px; display:none; animation:float 2s ease-in-out infinite alternate; }
+@keyframes float { 0%{transform:translateY(0) rotate(-3deg)} 100%{transform:translateY(-16px) rotate(3deg)} }
+#splash .title { font-family:'Playfair Display',serif; font-size:28px; color:#f0c96a; font-style:italic; }
+#splash .sub { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:5px; color:rgba(240,201,106,0.55); text-transform:uppercase; }
+
+/* HEADER */
+.hdr { height:56px; background:var(--ink); display:flex; align-items:center; justify-content:space-between; padding:0 18px; flex-shrink:0; }
+.hdr-brand { display:flex; align-items:center; gap:10px; }
+.hdr-brand span { font-family:'Playfair Display',serif; font-size:17px; color:#f0c96a; font-style:italic; }
+.hdr-brand small { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:4px; color:rgba(255,255,255,0.35); text-transform:uppercase; }
+.hdr-sep { width:1px; height:14px; background:rgba(255,255,255,0.12); }
+.hdr-actions { display:flex; gap:8px; }
+.hdr-btn { background:none; border:1px solid rgba(255,255,255,0.18); color:rgba(255,255,255,0.65); font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; padding:7px 14px; cursor:pointer; text-transform:uppercase; transition:all 0.18s; }
+.hdr-btn:hover, .hdr-btn.active { border-color:#f0c96a; color:#f0c96a; background:rgba(240,201,106,0.08); }
+
+/* LAYOUT */
+.layout { display:flex; height:calc(100vh - 56px); overflow:hidden; }
+
+/* SIDEBAR */
+.sidebar { width:272px; background:var(--paper-warm); border-right:1px solid var(--rule-strong); display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; transition:transform 0.25s; }
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:49; }
+.summary-wrap { padding:14px; display:flex; flex-direction:column; gap:7px; border-bottom:1px solid var(--rule-strong); }
+.sum-card { background:var(--paper); border:1px solid var(--rule-strong); padding:11px 14px; display:flex; justify-content:space-between; align-items:center; }
+.sum-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; margin-bottom:3px; }
+.sum-val { font-family:'Playfair Display',serif; font-size:17px; }
+.sum-val.red { color:var(--red); }
+.period-row { display:flex; border-bottom:1px solid var(--rule-strong); }
+.ptab { flex:1; background:none; border:none; border-bottom:2px solid transparent; font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--ink-dim); padding:9px; cursor:pointer; text-transform:uppercase; transition:all 0.18s; }
+.ptab.active { color:var(--gold); border-bottom-color:var(--gold); background:var(--gold-light); }
+.list-hdr { padding:10px 14px; display:flex; justify-content:space-between; border-bottom:1px solid var(--rule); }
+.list-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; }
+.inv-list { flex:1; overflow-y:auto; }
+.inv-list::-webkit-scrollbar { width:2px; }
+.inv-list::-webkit-scrollbar-thumb { background:var(--paper-darker); }
+.inv-item { padding:11px 14px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; transition:background 0.14s; gap:6px; }
+.inv-item > div:first-child { flex:1; cursor:pointer; display:flex; justify-content:space-between; align-items:flex-start; }
+.inv-item:hover { background:var(--paper-deep); }
+.inv-supplier { font-size:13px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.inv-date { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-dim); }
+.inv-amount { font-family:'Playfair Display',serif; font-size:14px; color:var(--red); }
+.inv-cnt { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--ink-dim); margin-top:2px; }
+.list-empty { padding:36px 18px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.list-empty span:first-child { font-size:26px; opacity:0.2; }
+.list-empty span:last-child { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:4px; color:var(--ink-dim); text-transform:uppercase; }
+
+/* MAIN */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* UPLOAD */
+#uploadState { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px; position:relative; }
+.upload-rings { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0.35; }
+.upload-rings div { position:absolute; border-radius:50%; border:1px solid var(--gold-border); }
+.upload-rings div:nth-child(1) { width:160px; height:160px; }
+.upload-rings div:nth-child(2) { width:280px; height:280px; }
+.upload-rings div:nth-child(3) { width:400px; height:400px; }
+.upload-icon { width:72px; height:72px; border:1px solid var(--rule-strong); background:var(--paper-warm); display:flex; align-items:center; justify-content:center; font-size:28px; position:relative; z-index:1; }
+.upload-title { font-family:'Playfair Display',serif; font-size:24px; color:var(--ink); font-style:italic; }
+.upload-sub { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:4px; color:var(--ink-dim); text-transform:uppercase; }
+.upload-btns { display:flex; gap:10px; position:relative; z-index:1; }
+.upload-btn { display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px 26px; border:1px solid var(--rule-strong); background:var(--paper-warm); cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; transition:all 0.18s; }
+.upload-btn:hover { border-color:var(--gold-border); color:var(--gold); background:var(--gold-light); }
+.upload-btn span:first-child { font-size:22px; }
+
+/* PROCESSING */
+#processingState { flex:1; display:none; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+.proc-moth { font-size:44px; animation:float 1.5s ease-in-out infinite alternate; }
+.proc-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--ink); font-style:italic; }
+.proc-sub { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:4px; color:var(--ink-dim); text-transform:uppercase; }
+.proc-bar { width:200px; height:2px; background:var(--rule-strong); overflow:hidden; }
+.proc-bar div { height:100%; background:var(--gold); animation:barslide 1.8s ease-in-out infinite; }
+@keyframes barslide { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
+
+/* RESULT */
+#resultState { flex:1; display:none; flex-direction:column; overflow:hidden; }
+.result-hdr { padding:14px 20px; border-bottom:1px solid var(--rule-strong); display:flex; justify-content:space-between; align-items:center; background:var(--paper-warm); flex-shrink:0; }
+.result-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--ink); font-style:italic; }
+.result-meta { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-dim); margin-top:2px; }
+.result-body { flex:1; display:flex; overflow:hidden; }
+.preview-pane { width:220px; border-right:1px solid var(--rule-strong); background:var(--paper-deep); display:flex; flex-direction:column; flex-shrink:0; }
+.preview-lbl { padding:9px 13px; font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; border-bottom:1px solid var(--rule); }
+.preview-img { flex:1; display:flex; align-items:center; justify-content:center; padding:14px; overflow:hidden; }
+.preview-img img { max-width:100%; max-height:100%; object-fit:contain; box-shadow:var(--shadow-lg); }
+.items-pane { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.items-hdr { padding:10px 18px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.tbl-hdr { display:grid; grid-template-columns:1fr 72px 72px 72px 32px; gap:6px; padding:7px 18px; background:var(--paper-warm); border-bottom:1px solid var(--rule-strong); flex-shrink:0; }
+.th { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; }
+.items-scroll { flex:1; overflow-y:auto; }
+.items-scroll::-webkit-scrollbar { width:2px; }
+.items-scroll::-webkit-scrollbar-thumb { background:var(--paper-darker); }
+.item-row { display:grid; grid-template-columns:1fr 72px 72px 72px 32px; gap:6px; padding:9px 18px; border-bottom:1px solid var(--rule); align-items:center; transition:background 0.14s; }
+.item-row:hover { background:var(--paper-warm); }
+.item-inp { background:none; border:none; border-bottom:1px solid transparent; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--ink); padding:2px 3px; width:100%; outline:none; transition:border-color 0.18s; }
+.item-inp:focus { border-bottom-color:var(--gold); }
+.item-inp.mono { font-family:'JetBrains Mono',monospace; font-size:12px; }
+.item-del { background:none; border:none; color:var(--ink-dim); cursor:pointer; font-size:13px; opacity:0.35; transition:all 0.18s; padding:3px; }
+.item-del:hover { opacity:1; color:var(--red); }
+.add-row { padding:9px 18px; border-bottom:1px solid var(--rule); }
+.add-btn { background:none; border:1px dashed var(--rule-strong); color:var(--ink-dim); font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; padding:8px 14px; cursor:pointer; text-transform:uppercase; width:100%; transition:all 0.18s; }
+.add-btn:hover { border-color:var(--gold-border); color:var(--gold); }
+.result-foot { padding:14px 18px; border-top:1px solid var(--rule-strong); background:var(--paper-warm); display:flex; justify-content:space-between; align-items:flex-end; flex-shrink:0; }
+.supplier-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; margin-bottom:6px; }
+.supplier-inp { background:var(--paper); border:1px solid var(--rule-strong); font-family:'DM Sans',sans-serif; font-size:14px; color:var(--ink); padding:8px 11px; outline:none; width:200px; transition:border-color 0.18s; }
+.supplier-inp:focus { border-color:var(--gold-border); }
+.total-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; margin-bottom:3px; text-align:right; }
+.total-val { font-family:'Playfair Display',serif; font-size:26px; color:var(--red); }
+.result-actions { padding:11px 18px; border-top:1px solid var(--rule); display:flex; gap:7px; background:var(--paper); flex-shrink:0; }
+.btn { padding:10px 18px; border:1px solid var(--rule-strong); background:var(--paper-warm); font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--ink-dim); cursor:pointer; text-transform:uppercase; transition:all 0.18s; }
+.btn:hover { border-color:var(--gold-border); color:var(--gold); }
+.btn.primary { background:var(--green); color:white; border-color:var(--green); flex:1; }
+.btn.primary:hover { background:#1e4d37; }
+.btn.danger { border-color:rgba(155,34,38,0.3); color:var(--red); }
+
+/* REPORTS */
+#reportsState { flex:1; display:none; flex-direction:column; overflow:hidden; }
+.reports-inner { flex:1; overflow-y:auto; padding:22px; display:flex; flex-direction:column; gap:20px; }
+.reports-inner::-webkit-scrollbar { width:2px; }
+.reports-inner::-webkit-scrollbar-thumb { background:var(--paper-darker); }
+.rpt-toolbar { display:flex; justify-content:space-between; align-items:center; }
+.rpt-periods { display:flex; gap:5px; }
+.rpt-period-btn { background:none; border:1px solid var(--rule-strong); font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--ink-dim); padding:6px 13px; cursor:pointer; text-transform:uppercase; transition:all 0.18s; }
+.rpt-period-btn.active { border-color:var(--gold-border); color:var(--gold); background:var(--gold-light); }
+.rpt-export-btns { display:flex; gap:6px; }
+.rpt-sum-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.rpt-card { background:var(--paper-warm); border:1px solid var(--rule-strong); padding:13px 15px; display:flex; justify-content:space-between; align-items:center; }
+.rpt-card-lbl { font-family:'JetBrains Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; margin-bottom:4px; }
+.rpt-card-val { font-family:'Playfair Display',serif; font-size:18px; }
+.rpt-card-val.red { color:var(--red); }
+.section-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--ink); font-style:italic; padding-bottom:8px; border-bottom:1px solid var(--rule-strong); }
+.chart-wrap { background:var(--paper-warm); border:1px solid var(--rule-strong); padding:18px 18px 36px; height:180px; display:flex; align-items:flex-end; gap:7px; }
+.bar { flex:1; min-width:18px; background:rgba(45,106,79,0.2); border-top:2px solid var(--green); position:relative; cursor:pointer; transition:background 0.18s; }
+.bar:hover { background:rgba(45,106,79,0.35); }
+.bar::after { content:attr(data-label); position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--ink-dim); white-space:nowrap; }
+.cat-list { display:flex; flex-direction:column; gap:5px; }
+.cat-row { background:var(--paper-warm); border:1px solid var(--rule-strong); }
+.cat-head { display:flex; justify-content:space-between; align-items:center; padding:11px 14px; cursor:pointer; transition:background 0.14s; }
+.cat-head:hover { background:var(--paper-deep); }
+.cat-name { display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; }
+.cat-amt { font-family:'Playfair Display',serif; font-size:15px; color:var(--red); }
+.cat-detail { display:none; border-top:1px solid var(--rule); }
+.cat-detail-row { display:flex; justify-content:space-between; align-items:center; padding:7px 14px; border-bottom:1px solid var(--rule); font-size:12px; }
+.cat-detail-row:last-child { border-bottom:none; }
+.cat-detail-name { color:var(--ink); }
+.cat-detail-info { display:flex; gap:14px; align-items:center; }
+.cat-detail-sup { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-dim); }
+.cat-detail-price { font-family:'Playfair Display',serif; font-size:13px; color:var(--red); }
+.fixed-list { display:flex; flex-direction:column; gap:4px; }
+.fixed-empty { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--ink-dim); text-transform:uppercase; text-align:center; padding:14px; }
+.fixed-row { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--paper-warm); border:1px solid var(--rule-strong); }
+.fixed-info { display:flex; align-items:center; gap:8px; }
+.fixed-name { font-size:13px; color:var(--ink); }
+.fixed-period { font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--ink-dim); text-transform:uppercase; margin-top:2px; }
+.fixed-right { display:flex; align-items:center; gap:12px; }
+.fixed-amount { font-family:'Playfair Display',serif; font-size:15px; color:var(--red); }
+.fixed-del { background:none; border:none; color:var(--ink-dim); cursor:pointer; font-size:13px; opacity:0.35; transition:all 0.18s; }
+.fixed-del:hover { opacity:1; color:var(--red); }
+.rpt-add-fixed { display:flex; justify-content:flex-end; }
+
+/* MODAL */
+.modal-bg { display:none; position:fixed; inset:0; background:rgba(26,18,8,0.5); z-index:200; align-items:center; justify-content:center; }
+.modal-box { background:var(--paper); border:1px solid var(--rule-strong); padding:30px; width:360px; max-width:92vw; }
+.modal-title { font-family:'Playfair Display',serif; font-size:19px; color:var(--ink); font-style:italic; margin-bottom:18px; }
+.modal-fields { display:flex; flex-direction:column; gap:9px; margin-bottom:18px; }
+.modal-select, .modal-input { background:var(--paper-warm); border:1px solid var(--rule-strong); padding:10px 12px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--ink); outline:none; width:100%; transition:border-color 0.18s; }
+.modal-select:focus, .modal-input:focus { border-color:var(--gold-border); }
+.modal-actions { display:flex; gap:7px; }
+
+/* TOAST */
+#toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--paper); font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; padding:11px 22px; z-index:500; display:none; white-space:nowrap; }
+
+input[type=file] { display:none; }
+
+@media (max-width: 768px) {
+  #btnSidebar { display:flex !important; }
+  .sidebar { position:fixed; left:0; top:56px; bottom:0; z-index:50; transform:translateX(-100%); box-shadow:var(--shadow-lg); }
+  .sidebar.open { transform:translateX(0); }
+  .sidebar-overlay.open { display:block; }
+  .preview-pane { display:none; }
+  .tbl-hdr { grid-template-columns:1fr 60px 60px 28px; }
+  .item-row { grid-template-columns:1fr 60px 60px 28px; }
+  .rpt-sum-cards { grid-template-columns:1fr 1fr; }
+  .rpt-sum-cards > div:last-child { grid-column:1/-1; }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <img src="logo.png" alt="Bogong" onerror="this.style.display='none';document.querySelector('#splash .moth-fallback').style.display='block'">
+  <div class="moth-fallback">🦋</div>
+  <div class="title">Bogong Ledger</div>
+  <div class="sub">The moth knows the numbers.</div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-brand">
+    <span>Bogong Ledger</span>
+    <div class="hdr-sep"></div>
+    <small>Invoice Intelligence</small>
+  </div>
+  <div class="hdr-actions"><button class="hdr-btn" id="btnSidebar" onclick="toggleSidebar()" style="display:none">☰</button>
+    <button class="hdr-btn" id="btnReports" onclick="showReports()">📊 Reports</button>
+    <button class="hdr-btn active" id="btnInvoice" onclick="showUpload()">+ Invoice</button>
+  </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="summary-wrap">
+      <div class="sum-card">
+        <div><div class="sum-lbl">This Month</div><div class="sum-val red" id="sumMonthTotal">$0.00</div></div>
+        <span style="font-size:18px;opacity:0.25">📉</span>
+      </div>
+      <div class="sum-card">
+        <div><div class="sum-lbl">Invoices</div><div class="sum-val" id="sumCount">0</div></div>
+        <span style="font-size:18px;opacity:0.25">🧾</span>
+      </div>
+    </div>
+    <div class="period-row">
+      <button class="ptab active" onclick="setSidebarPeriod('week',this)">Week</button>
+      <button class="ptab" onclick="setSidebarPeriod('month',this)">Month</button>
+      <button class="ptab" onclick="setSidebarPeriod('year',this)">Year</button>
+    </div>
+    <div class="list-hdr">
+      <span class="list-lbl">Recent Invoices</span>
+      <span class="list-lbl" id="listCount">0</span>
+    </div>
+    <div style="padding:8px 10px;border-bottom:1px solid var(--rule)">
+      <input id="sidebarSearch" type="text" placeholder="Search supplier..." oninput="renderSidebar()" style="width:100%;background:var(--paper);border:1px solid var(--rule-strong);padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);outline:none">
+    </div>
+    <div class="inv-list" id="invList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- UPLOAD -->
+    <div id="uploadState">
+      <div class="upload-rings"><div></div><div></div><div></div></div>
+      <div class="upload-icon">🧾</div>
+      <div class="upload-title">Add an Invoice</div>
+      <div class="upload-sub">Photo or PDF — AI reads the rest</div>
+      <div class="upload-btns">
+        <button class="upload-btn" onclick="document.getElementById('camInput').click()">
+          <span>📸</span><span>Camera</span>
+        </button>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+          <span>📄</span><span>File / PDF</span>
+        </button>
+        <button class="upload-btn" onclick="loadDemo()">
+          <span>✨</span><span>Demo</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PROCESSING -->
+    <div id="processingState">
+      <div class="proc-moth">🦋</div>
+      <div class="proc-title">Reading invoice...</div>
+      <div class="proc-sub">Claude Haiku is parsing</div>
+      <div class="proc-bar"><div></div></div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="resultState">
+      <div class="result-hdr">
+        <div>
+          <div class="result-title" id="resultTitle">Invoice</div>
+          <div class="result-meta" id="resultMeta"></div>
+        </div>
+        <button class="btn" onclick="showUpload()">← New Invoice</button>
+      </div>
+      <div class="result-body">
+        <div class="preview-pane">
+          <div class="preview-lbl">Original</div>
+          <div class="preview-img" id="previewImg">
+            <span style="font-size:32px;opacity:0.2">🧾</span>
+          </div>
+        </div>
+        <div class="items-pane">
+          <div class="items-hdr">
+            <span class="list-lbl">Line Items</span>
+            <span class="list-lbl" id="itemCount">0 items</span>
+          </div>
+          <div class="tbl-hdr">
+            <div class="th">Item</div>
+            <div class="th">Qty</div>
+            <div class="th">Unit $</div>
+            <div class="th">Total</div>
+            <div class="th"></div>
+          </div>
+          <div class="items-scroll" id="itemsScroll"></div>
+          <div class="add-row">
+            <button class="add-btn" onclick="addItem()">+ Add Item</button>
+          </div>
+        </div>
+      </div>
+      <div class="result-foot">
+        <div>
+          <div class="supplier-lbl">Supplier</div>
+          <input class="supplier-inp" type="text" id="supplierInp" placeholder="Supplier name">
+        </div>
+        <div>
+          <div class="total-lbl">Total</div>
+          <div class="total-val" id="totalVal">$0.00</div>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn danger" onclick="discardInvoice()">Discard</button>
+        <button class="btn" onclick="showUpload()">New</button>
+        <button class="btn primary" onclick="saveInvoice()">Save Invoice</button>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="reportsState">
+      <div class="reports-inner">
+        <div class="rpt-toolbar">
+          <div class="rpt-periods">
+            <button class="rpt-period-btn active" id="rp-week" onclick="setRptPeriod('week',this)">Week</button>
+            <button class="rpt-period-btn" id="rp-month" onclick="setRptPeriod('month',this)">Month</button>
+            <button class="rpt-period-btn" id="rp-year" onclick="setRptPeriod('year',this)">Year</button>
+          </div>
+          <div class="rpt-export-btns">
+            <button class="btn" onclick="exportCSV()">📊 Excel</button>
+            <button class="btn" onclick="exportPDF()">📄 PDF</button>
+          </div>
+        </div>
+        <div class="rpt-sum-cards">
+          <div class="rpt-card"><div><div class="rpt-card-lbl">Invoices</div><div class="rpt-card-val red" id="rSumInv">$0.00</div></div><span style="font-size:18px;opacity:0.25">🧾</span></div>
+          <div class="rpt-card"><div><div class="rpt-card-lbl">Fixed Costs</div><div class="rpt-card-val red" id="rSumFixed">$0.00</div></div><span style="font-size:18px;opacity:0.25">🏠</span></div>
+          <div class="rpt-card" style="background:var(--green-light);border-color:rgba(45,106,79,0.2)"><div><div class="rpt-card-lbl">Total Expenses</div><div class="rpt-card-val red" id="rSumTotal">$0.00</div></div><span style="font-size:18px;opacity:0.25">📊</span></div>
+        </div>
+        <div>
+          <div class="section-title">Expenses Over Time</div>
+          <div class="chart-wrap" id="chartWrap"></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="section-title" style="border:none;padding:0">By Category</div>
+          </div>
+          <div style="margin-bottom:8px">
+            <input id="catSearch" type="text" placeholder="Search products..." oninput="renderReports()" style="width:100%;background:var(--paper-warm);border:1px solid var(--rule-strong);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);outline:none">
+          </div>
+          <div class="cat-list" id="catList"></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="section-title" style="border:none;padding:0">Fixed Costs</div>
+            <button class="btn" onclick="openExpenseModal()">+ Add</button>
+          </div>
+          <div class="fixed-list" id="fixedList"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD EXPENSE MODAL -->
+<div class="modal-bg" id="expenseModal">
+  <div class="modal-box">
+    <div class="modal-title">Add Fixed Cost</div>
+    <div class="modal-fields">
+      <select class="modal-select" id="expType">
+        <option value="rent">🏠 Rent</option>
+        <option value="electricity">⚡ Electricity</option>
+        <option value="water">💧 Water / Gas</option>
+        <option value="staff">👥 Staff</option>
+        <option value="council">🏛️ Council / Tax</option>
+        <option value="other">📋 Other</option>
+      </select>
+      <input class="modal-input" type="text" id="expName" placeholder="Description (optional)">
+      <input class="modal-input" type="number" id="expAmount" placeholder="Amount $">
+      <select class="modal-select" id="expPeriod">
+        <option value="weekly">Weekly</option>
+        <option value="monthly" selected>Monthly</option>
+        <option value="yearly">Yearly</option>
+        <option value="once">One-off</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" onclick="saveExpense()">Save</button>
+      <button class="btn" onclick="closeExpenseModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- FILE INPUTS -->
+<input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFile(this)">
+<input type="file" id="camInput" accept="image/*" capture="environment" onchange="handleFile(this)">
+
+<script>
+// ── STATE ──
+var invoices = JSON.parse(localStorage.getItem('ledger_invoices') || '[]');
+var fixedCosts = JSON.parse(localStorage.getItem('ledger_fixed_costs') || '[]');
+var currentItems = [];
+var currentImage = null;
+var sidebarPeriod = 'month';
+var rptPeriod = 'week';
+
+// ── SPLASH ──
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var s = document.getElementById('splash');
+    if (!s) return;
+    s.style.opacity = '0';
+    setTimeout(function() {
+      if (s.parentNode) s.parentNode.removeChild(s);
+    }, 650);
+  }, 2000);
+});
+
+// ── NAVIGATION ──
+function showUpload() {
+  setMain('uploadState');
+  document.getElementById('btnInvoice').classList.add('active');
+  document.getElementById('btnReports').classList.remove('active');
+}
+
+function showProcessing() {
+  setMain('processingState');
+}
+
+function showResult() {
+  setMain('resultState');
+}
+
+function showReports() {
+  setMain('reportsState');
+  document.getElementById('btnReports').classList.add('active');
+  document.getElementById('btnInvoice').classList.remove('active');
+  renderReports();
+}
+
+function setMain(id) {
+  var ids = ['uploadState','processingState','resultState','reportsState'];
+  ids.forEach(function(sid) {
+    var el = document.getElementById(sid);
+    if (el) el.style.display = sid === id ? 'flex' : 'none';
+  });
+}
+
+// ── FILE ──
+function handleFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    currentImage = e.target.result;
+    if (file.type.indexOf('image') === 0) {
+      document.getElementById('previewImg').innerHTML = '<img src="' + currentImage + '" alt="Invoice">';
+    }
+    showProcessing();
+    parseInvoice(file, currentImage);
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ── PARSE ──
+function parseInvoice(file, imageData) {
+  var base64 = imageData.split(',')[1];
+  var mediaType = file.type || 'image/jpeg';
+  var isImage = file.type.indexOf('image') === 0;
+
+  fetch('https://bogong-ledger.vercel.app/api/parse', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageData: base64, mediaType: mediaType, isImage: isImage })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) throw new Error(data.error);
+    renderResult(data);
+  })
+  .catch(function(err) {
+    console.log('Parse error:', err.message);
+    showToast('Using demo data');
+    renderResult(getDemoData());
+  });
+}
+
+function getDemoData() {
+  return {
+    supplier: 'Fresh Market Distributors',
+    date: new Date().toLocaleDateString('en-AU'),
+    invoice_number: 'INV-' + Math.floor(Math.random() * 9000 + 1000),
+    items: [
+      { name:'Roma Tomatoes', quantity:10, unit:'kg', unit_price:3.50, total:35.00, category:'produce' },
+      { name:'Mixed Salad Leaves', quantity:5, unit:'kg', unit_price:8.00, total:40.00, category:'produce' },
+      { name:'Mozzarella Cheese', quantity:3, unit:'kg', unit_price:14.00, total:42.00, category:'dairy' },
+      { name:'Chicken Breast', quantity:8, unit:'kg', unit_price:12.50, total:100.00, category:'meat' },
+      { name:'Olive Oil 4L', quantity:2, unit:'btl', unit_price:22.00, total:44.00, category:'other' }
+    ],
+    subtotal: 246.36, gst: 24.64, total: 271.00
+  };
+}
+
+function renderResult(data) {
+  currentItems = (data.items || []).map(function(item, i) {
+    return Object.assign({}, item, { _id: Date.now() + i });
+  });
+  document.getElementById('supplierInp').value = data.supplier || '';
+  document.getElementById('resultTitle').textContent = data.supplier || 'Invoice';
+  document.getElementById('resultMeta').textContent = (data.date || '') + (data.invoice_number ? ' · ' + data.invoice_number : '');
+  renderItems();
+  showResult();
+}
+
+// ── ITEMS ──
+function renderItems() {
+  var list = document.getElementById('itemsScroll');
+  document.getElementById('itemCount').textContent = currentItems.length + ' items';
+  list.innerHTML = currentItems.map(function(item) {
+    return '<div class="item-row" id="ir-' + item._id + '">' +
+      '<input class="item-inp" type="text" value="' + esc(item.name || '') + '" onchange="updItem(' + item._id + ',\'name\',this.value)">' +
+      '<input class="item-inp mono" type="number" value="' + (item.quantity || '') + '" onchange="updItem(' + item._id + ',\'quantity\',parseFloat(this.value)||0)">' +
+      '<input class="item-inp mono" type="number" value="' + (item.unit_price || '') + '" onchange="updItem(' + item._id + ',\'unit_price\',parseFloat(this.value)||0)">' +
+      '<input class="item-inp mono" type="number" id="tot-' + item._id + '" value="' + (item.total || 0).toFixed(2) + '" onchange="updItem(' + item._id + ',\'total\',parseFloat(this.value)||0)">' +
+      '<button class="item-del" onclick="delItem(' + item._id + ')">✕</button>' +
+    '</div>';
+  }).join('');
+  calcTotal();
+}
+
+function updItem(id, field, val) {
+  var item = currentItems.find(function(i) { return i._id === id; });
+  if (!item) return;
+  item[field] = val;
+  if (field === 'quantity' || field === 'unit_price') {
+    item.total = (item.quantity || 0) * (item.unit_price || 0);
+    var el = document.getElementById('tot-' + id);
+    if (el) el.value = item.total.toFixed(2);
+  }
+  calcTotal();
+}
+
+function delItem(id) {
+  currentItems = currentItems.filter(function(i) { return i._id !== id; });
+  renderItems();
+}
+
+function addItem() {
+  var newId = Date.now();
+  currentItems.push({ _id: newId, name:'', quantity:1, unit:'unit', unit_price:0, total:0, category:'other' });
+  renderItems();
+  setTimeout(function() {
+    var rows = document.querySelectorAll('.item-row');
+    if (rows.length) {
+      var inp = rows[rows.length - 1].querySelector('input');
+      if (inp) inp.focus();
+    }
+  }, 50);
+}
+
+function calcTotal() {
+  var total = currentItems.reduce(function(s, i) { return s + (i.total || 0); }, 0);
+  document.getElementById('totalVal').textContent = '$' + total.toFixed(2);
+}
+
+// ── SAVE / DISCARD ──
+function saveInvoice() {
+  var total = currentItems.reduce(function(s, i) { return s + (i.total || 0); }, 0);
+  var inv = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    supplier: document.getElementById('supplierInp').value || 'Unknown',
+    items: currentItems.map(function(i) { return Object.assign({}, i); }),
+    total: total,
+    image: currentImage
+  };
+  invoices.unshift(inv);
+  localStorage.setItem('ledger_invoices', JSON.stringify(invoices));
+  renderSidebar();
+  showToast('Invoice saved');
+  showUpload();
+
+  // Cloud save
+  fetch('https://bogong-ledger.vercel.app/api/invoices', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      store_id: localStorage.getItem('store_id') || 'default',
+      supplier: inv.supplier,
+      invoice_date: inv.date,
+      items: inv.items,
+      total: inv.total
+    })
+  }).catch(function() {});
+}
+
+function discardInvoice() {
+  currentItems = [];
+  currentImage = null;
+  showUpload();
+}
+
+// ── DEMO ──
+function loadDemo() {
+  showProcessing();
+  setTimeout(function() { renderResult(getDemoData()); }, 1400);
+}
+
+// ── SIDEBAR ──
+function setSidebarPeriod(p, btn) {
+  sidebarPeriod = p;
+  document.querySelectorAll('.ptab').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderSidebar();
+}
+
+function renderSidebar() {
+  var now = new Date();
+  var filtered = invoices.filter(function(inv) {
+    var d = new Date(inv.date);
+    if (sidebarPeriod === 'week') return (now - d) < 7 * 86400000;
+    if (sidebarPeriod === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return d.getFullYear() === now.getFullYear();
+  });
+
+  var total = filtered.reduce(function(s, i) { return s + (i.total || 0); }, 0);
+  document.getElementById('sumMonthTotal').textContent = '$' + total.toFixed(2);
+  document.getElementById('sumCount').textContent = filtered.length;
+  document.getElementById('listCount').textContent = invoices.length;
+
+  var list = document.getElementById('invList');
+  var searchEl = document.getElementById('sidebarSearch');
+  var searchQ = searchEl ? searchEl.value.toLowerCase().trim() : '';
+  var displayList = invoices.slice(0, 100).filter(function(inv) {
+    if (!searchQ) return true;
+    return (inv.supplier || '').toLowerCase().indexOf(searchQ) >= 0;
+  });
+  if (!displayList.length) {
+    list.innerHTML = '<div class="list-empty"><span>🧾</span><span>' + (searchQ ? 'No results' : 'No invoices yet') + '</span></div>';
+    return;
+  }
+  list.innerHTML = displayList.map(function(inv) {
+    return '<div class="inv-item" style="position:relative">' +
+      '<div style="flex:1" onclick="viewInvoice(' + inv.id + ')">' +
+        '<div><div class="inv-supplier">' + esc(inv.supplier) + '</div><div class="inv-date">' + new Date(inv.date).toLocaleDateString('en-AU') + '</div></div>' +
+        '<div style="text-align:right"><div class="inv-amount">$' + (inv.total || 0).toFixed(2) + '</div><div class="inv-cnt">' + (inv.items || []).length + ' items</div></div>' +
+      '</div>' +
+      '<button onclick="deleteInvoice(' + inv.id + ',event)" style="margin-left:6px;background:#9b2226;border:none;color:white;cursor:pointer;font-size:12px;padding:5px 9px;flex-shrink:0">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+function deleteInvoice(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this invoice?')) return;
+  invoices = invoices.filter(function(i) { return i.id !== id; });
+  localStorage.setItem('ledger_invoices', JSON.stringify(invoices));
+  renderSidebar();
+  showToast('Invoice deleted');
+}
+
+function viewInvoice(id) {
+  var inv = invoices.find(function(i) { return i.id === id; });
+  if (!inv) return;
+  currentItems = (inv.items || []).map(function(item, i) { return Object.assign({}, item, { _id: Date.now() + i }); });
+  currentImage = inv.image;
+  if (inv.image) {
+    document.getElementById('previewImg').innerHTML = '<img src="' + inv.image + '" alt="Invoice">';
+  }
+  document.getElementById('supplierInp').value = inv.supplier || '';
+  document.getElementById('resultTitle').textContent = inv.supplier || 'Invoice';
+  document.getElementById('resultMeta').textContent = new Date(inv.date).toLocaleDateString('en-AU');
+  renderItems();
+  showResult();
+}
+
+// ── REPORTS ──
+function setRptPeriod(p, btn) {
+  rptPeriod = p;
+  document.querySelectorAll('.rpt-period-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderReports();
+}
+
+function getRptInvoices() {
+  var now = new Date();
+  return invoices.filter(function(inv) {
+    var d = new Date(inv.date);
+    if (rptPeriod === 'week') return (now - d) < 7 * 86400000;
+    if (rptPeriod === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return d.getFullYear() === now.getFullYear();
+  });
+}
+
+function getFixedTotal() {
+  return fixedCosts.reduce(function(sum, c) {
+    var a = c.amount || 0;
+    if (rptPeriod === 'week') {
+      if (c.period === 'weekly') return sum + a;
+      if (c.period === 'monthly') return sum + a / 4.33;
+      if (c.period === 'yearly') return sum + a / 52;
+    } else if (rptPeriod === 'month') {
+      if (c.period === 'monthly') return sum + a;
+      if (c.period === 'weekly') return sum + a * 4.33;
+      if (c.period === 'yearly') return sum + a / 12;
+    } else {
+      if (c.period === 'yearly') return sum + a;
+      if (c.period === 'monthly') return sum + a * 12;
+      if (c.period === 'weekly') return sum + a * 52;
+    }
+    if (c.period === 'once') return sum + a;
+    return sum;
+  }, 0);
+}
+
+function renderReports() {
+  var filtered = getRptInvoices();
+  var invTotal = filtered.reduce(function(s, i) { return s + (i.total || 0); }, 0);
+  var fixTotal = getFixedTotal();
+
+  document.getElementById('rSumInv').textContent = '$' + invTotal.toFixed(2);
+  document.getElementById('rSumFixed').textContent = '$' + fixTotal.toFixed(2);
+  document.getElementById('rSumTotal').textContent = '$' + (invTotal + fixTotal).toFixed(2);
+
+  // Chart
+  var labels = rptPeriod === 'week' ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] :
+               rptPeriod === 'month' ? ['W1','W2','W3','W4','W5'] :
+               ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var vals = labels.map(function() { return 0; });
+  filtered.forEach(function(inv) {
+    var d = new Date(inv.date);
+    var idx = rptPeriod === 'week' ? (d.getDay() + 6) % 7 :
+              rptPeriod === 'month' ? Math.min(Math.floor(d.getDate() / 7), 4) : d.getMonth();
+    if (vals[idx] !== undefined) vals[idx] += inv.total || 0;
+  });
+  var max = Math.max.apply(null, vals.concat([1]));
+  document.getElementById('chartWrap').innerHTML = vals.map(function(v, i) {
+    return '<div class="bar" style="height:' + Math.max(v / max * 100, 2) + '%" data-label="' + labels[i] + '" title="$' + v.toFixed(0) + '"></div>';
+  }).join('');
+
+  // Categories
+  var cats = {};
+  var catItems = {};
+  filtered.forEach(function(inv) {
+    (inv.items || []).forEach(function(item) {
+      var c = item.category || 'other';
+      cats[c] = (cats[c] || 0) + (item.total || 0);
+      if (!catItems[c]) catItems[c] = [];
+      catItems[c].push({ name: item.name, qty: item.quantity, unit: item.unit, total: item.total, supplier: inv.supplier });
+    });
+  });
+  var emojis = { produce:'🥬', meat:'🥩', dairy:'🧀', other:'📦' };
+  var catSearchEl = document.getElementById('catSearch');
+  var catQ = catSearchEl ? catSearchEl.value.toLowerCase().trim() : '';
+  var catHtml = '';
+
+  if (catQ) {
+    var results = [];
+    Object.keys(catItems).forEach(function(cat) {
+      (catItems[cat] || []).forEach(function(it) {
+        if ((it.name || '').toLowerCase().indexOf(catQ) >= 0) {
+          results.push({ cat: cat, it: it });
+        }
+      });
+    });
+    if (!results.length) {
+      catHtml = '<div class="fixed-empty">No results for "' + esc(catQ) + '"</div>';
+    } else {
+      catHtml = '<div style="background:var(--paper-warm);border:1px solid var(--rule-strong)">';
+      catHtml += '<div style="padding:8px 14px;border-bottom:1px solid var(--rule);font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:2px;color:var(--gold);text-transform:uppercase">' + results.length + ' results</div>';
+      results.forEach(function(r) {
+        catHtml += '<div class="cat-detail-row">' +
+          '<span class="cat-detail-name">' + esc(r.it.name || '') +
+          ' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-dim)">' + (emojis[r.cat]||'📦') + ' ' + r.cat + '</span></span>' +
+          '<div class="cat-detail-info"><span class="cat-detail-sup">' + esc(r.it.supplier||'') + '</span><span class="cat-detail-price">$' + (r.it.total||0).toFixed(2) + '</span></div>' +
+        '</div>';
+      });
+      catHtml += '</div>';
+    }
+  } else {
+    Object.keys(cats).forEach(function(cat) {
+      var allItems = catItems[cat] || [];
+      var catTotal = cats[cat];
+      var rows = allItems.map(function(it) {
+        return '<div class="cat-detail-row"><span class="cat-detail-name">' + esc(it.name||'') + ' <span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;color:var(--ink-dim)">' + (it.qty||'') + ' ' + (it.unit||'') + '</span></span>' +
+          '<div class="cat-detail-info"><span class="cat-detail-sup">' + esc(it.supplier||'') + '</span><span class="cat-detail-price">$' + (it.total||0).toFixed(2) + '</span></div></div>';
+      }).join('');
+      catHtml += '<div class="cat-row">' +
+        '<div class="cat-head" onclick="toggleCat(\'' + cat + '\')">' +
+          '<div class="cat-name"><span>' + (emojis[cat]||'📦') + '</span>' + cat + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px"><span class="cat-amt">$' + catTotal.toFixed(2) + '</span><span id="catarrow-' + cat + '" style="font-size:10px;color:var(--ink-dim)">▼</span></div>' +
+        '</div>' +
+        '<div class="cat-detail" id="catdetail-' + cat + '" style="display:none">' + rows + '</div>' +
+      '</div>';
+    });
+  }
+  document.getElementById('catList').innerHTML = catHtml || '<div class="fixed-empty">No data</div>';
+
+  // Fixed costs list
+  var fixHtml = '';
+  if (!fixedCosts.length) {
+    fixHtml = '<div class="fixed-empty">No fixed costs added</div>';
+  } else {
+    var typeEmoji = { rent:'🏠', electricity:'⚡', water:'💧', staff:'👥', council:'🏛️', other:'📋' };
+    fixedCosts.forEach(function(c, i) {
+      fixHtml += '<div class="fixed-row">' +
+        '<div class="fixed-info"><span style="font-size:16px">' + (typeEmoji[c.type] || '📋') + '</span>' +
+        '<div><div class="fixed-name">' + esc(c.name || c.type) + '</div><div class="fixed-period">' + c.period + '</div></div></div>' +
+        '<div class="fixed-right"><span class="fixed-amount">$' + (c.amount || 0).toFixed(2) + '</span>' +
+        '<button class="fixed-del" onclick="delExpense(' + i + ')">✕</button></div>' +
+      '</div>';
+    });
+  }
+  document.getElementById('fixedList').innerHTML = fixHtml;
+}
+
+function toggleCat(cat) {
+  var d = document.getElementById('catdetail-' + cat);
+  var a = document.getElementById('catarrow-' + cat);
+  if (!d) return;
+  var open = d.style.display === 'block';
+  d.style.display = open ? 'none' : 'block';
+  if (a) a.textContent = open ? '▼' : '▲';
+}
+
+// ── FIXED COSTS ──
+function openExpenseModal() {
+  document.getElementById('expenseModal').style.display = 'flex';
+}
+
+function closeExpenseModal() {
+  document.getElementById('expenseModal').style.display = 'none';
+}
+
+function saveExpense() {
+  var amount = parseFloat(document.getElementById('expAmount').value) || 0;
+  if (!amount) return;
+  fixedCosts.push({
+    type: document.getElementById('expType').value,
+    name: document.getElementById('expName').value.trim() || document.getElementById('expType').value,
+    amount: amount,
+    period: document.getElementById('expPeriod').value
+  });
+  localStorage.setItem('ledger_fixed_costs', JSON.stringify(fixedCosts));
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expName').value = '';
+  closeExpenseModal();
+  renderReports();
+  showToast('Fixed cost saved');
+}
+
+function delExpense(i) {
+  fixedCosts.splice(i, 1);
+  localStorage.setItem('ledger_fixed_costs', JSON.stringify(fixedCosts));
+  renderReports();
+}
+
+// ── EXPORT ──
+function exportCSV() {
+  var filtered = getRptInvoices();
+  var rows = [['Date','Supplier','Item','Category','Qty','Unit','Unit Price','Total']];
+  filtered.forEach(function(inv) {
+    (inv.items || []).forEach(function(item) {
+      rows.push([
+        new Date(inv.date).toLocaleDateString('en-AU'),
+        inv.supplier || '',
+        item.name || '',
+        item.category || 'other',
+        item.quantity || '',
+        item.unit || '',
+        (item.unit_price || 0).toFixed(2),
+        (item.total || 0).toFixed(2)
+      ]);
+    });
+  });
+  if (fixedCosts.length) {
+    rows.push([]);
+    rows.push(['Fixed Costs','','','','','','','']);
+    rows.push(['Type','Name','Amount','Period','','','','']);
+    fixedCosts.forEach(function(c) {
+      rows.push([c.type, c.name, (c.amount || 0).toFixed(2), c.period, '', '', '', '']);
+    });
+  }
+  var csv = rows.map(function(r) { return r.join(','); }).join('\r\n');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'bogong-ledger-' + rptPeriod + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV downloaded');
+}
+
+function exportPDF() {
+  var filtered = getRptInvoices();
+  var fixTotal = getFixedTotal();
+  var invTotal = filtered.reduce(function(s, i) { return s + (i.total || 0); }, 0);
+
+  var itemRows = '';
+  filtered.forEach(function(inv) {
+    (inv.items || []).forEach(function(item) {
+      itemRows += '<tr><td>' + new Date(inv.date).toLocaleDateString('en-AU') + '</td><td>' +
+        (inv.supplier || '') + '</td><td>' + (item.name || '') + '</td><td>' +
+        (item.category || 'other') + '</td><td style="text-align:right">$' +
+        (item.total || 0).toFixed(2) + '</td></tr>';
+    });
+  });
+
+  var fixRows = '';
+  fixedCosts.forEach(function(c) {
+    fixRows += '<tr><td>' + c.type + '</td><td>' + (c.name || '') + '</td><td>' + c.period + '</td><td style="text-align:right">$' + (c.amount || 0).toFixed(2) + '</td></tr>';
+  });
+
+  var pLabel = rptPeriod.charAt(0).toUpperCase() + rptPeriod.slice(1);
+  var css = 'body{font-family:Georgia,serif;color:#1a1208;padding:40px;max-width:820px;margin:0 auto}h1{font-size:26px;font-style:italic;border-bottom:2px solid #1a1208;padding-bottom:8px}p{font-size:11px;color:#8a7a62;font-family:monospace;margin:6px 0 18px}h2{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#8a7a62;margin:22px 0 8px}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;border-bottom:1px solid #1a1208;padding:6px 8px;font-size:10px;text-transform:uppercase;color:#8a7a62}td{padding:6px 8px;border-bottom:1px solid #ede3d4}.tr td{font-weight:bold;border-top:2px solid #1a1208}.sum{background:#f5ede0;padding:14px;margin-top:18px}';
+
+  var doc = '<html><head><style>' + css + '</style></head><body>';
+  doc += '<h1>Bogong Ledger — ' + pLabel + 'ly Report</h1>';
+  doc += '<p>Generated: ' + new Date().toLocaleDateString('en-AU') + '</p>';
+  doc += '<h2>Invoice Expenses</h2>';
+  doc += '<table><tr><th>Date</th><th>Supplier</th><th>Item</th><th>Category</th><th style="text-align:right">Total</th></tr>';
+  doc += itemRows;
+  doc += '<tr class="tr"><td colspan="4">Invoice Total</td><td style="text-align:right">$' + invTotal.toFixed(2) + '</td></tr></table>';
+  if (fixedCosts.length) {
+    doc += '<h2>Fixed Costs</h2>';
+    doc += '<table><tr><th>Type</th><th>Name</th><th>Period</th><th style="text-align:right">Amount</th></tr>';
+    doc += fixRows;
+    doc += '<tr class="tr"><td colspan="3">Fixed Total (' + pLabel + ')</td><td style="text-align:right">$' + fixTotal.toFixed(2) + '</td></tr></table>';
+  }
+  doc += '<div class="sum"><table>';
+  doc += '<tr><td>Invoice Expenses</td><td style="text-align:right">$' + invTotal.toFixed(2) + '</td></tr>';
+  doc += '<tr><td>Fixed Costs</td><td style="text-align:right">$' + fixTotal.toFixed(2) + '</td></tr>';
+  doc += '<tr class="tr"><td>TOTAL EXPENSES</td><td style="text-align:right">$' + (invTotal + fixTotal).toFixed(2) + '</td></tr>';
+  doc += '</table></div>';
+  doc += '<' + '/body>';
+  doc += '<' + '/html>';
+
+  var win = window.open('', '_blank');
+  win.document.write(doc);
+  win.document.close();
+  win.print();
+}
+
+// ── UTILS ──
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 2400);
+}
+
+// ── SIDEBAR TOGGLE ──
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+// ── INIT ──
+renderSidebar();
+</script>
+</body>
+</html>
